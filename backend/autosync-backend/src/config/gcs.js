@@ -3,7 +3,6 @@ const path = require("path");
 
 const storage = new Storage({
   projectId: process.env.GCS_PROJECT_ID,
-  keyFilename: process.env.GCS_KEYFILE, // path to your service account JSON key
 });
 
 const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
@@ -16,6 +15,7 @@ const uploadToGCS = (fileBuffer, originalName, mimetype) => {
   return new Promise((resolve, reject) => {
     const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(originalName)}`;
     const blob = bucket.file(uniqueName);
+
     const blobStream = blob.createWriteStream({
       resumable: false,
       contentType: mimetype,
@@ -23,14 +23,9 @@ const uploadToGCS = (fileBuffer, originalName, mimetype) => {
 
     blobStream.on("error", (err) => reject(err));
 
-    blobStream.on("finish", async () => {
-      try {
-        await blob.makePublic();
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-        resolve(publicUrl);
-      } catch (err) {
-        reject(err);
-      }
+    blobStream.on("finish", () => {
+      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+      resolve(publicUrl);
     });
 
     blobStream.end(fileBuffer);
@@ -43,7 +38,9 @@ const uploadToGCS = (fileBuffer, originalName, mimetype) => {
 const deleteFromGCS = async (fileUrl) => {
   try {
     const fileName = fileUrl.split(`${bucket.name}/`)[1];
+
     if (!fileName) return;
+
     await bucket.file(fileName).delete();
   } catch (err) {
     console.error("GCS delete failed:", err.message);

@@ -37,7 +37,7 @@ const createProduct = async (req, res) => {
 // READ ALL — GET /api/products
 const getProducts = async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
+    const products = await Product.find().sort({ createdAt: 1 });
     res.status(200).json({ count: products.length, products });
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch products", error: err.message });
