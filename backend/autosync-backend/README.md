@@ -80,6 +80,37 @@ Products link to a category through their `categoryId` field (optional — a pro
 - Fetching a product automatically includes its category's name and description
 - `category` (AC/DC) and `categoryId` (the group it belongs to) are separate fields — a "Fast Charging" category can contain both AC and DC chargers
 
+### Charging Stations
+
+Plain JSON bodies (no images here, so no form-data needed).
+
+| Method | Endpoint | Body | Who can use it |
+|---|---|---|---|
+| GET | `/api/stations` | — | Any logged-in user |
+| GET | `/api/stations/:id` | — | Any logged-in user |
+| POST | `/api/stations` | `{ locationName, address, latitude, longitude, chargerType, numberOfUnits }` | Admin only |
+| PUT | `/api/stations/:id` | same fields, all optional | Admin only |
+| DELETE | `/api/stations/:id` | — | Admin only |
+
+Validation rules:
+
+- `chargerType` must be one of `AC`, `DC`, `AC/DC`
+- `latitude` must be between -90 and 90, `longitude` between -180 and 180
+- `numberOfUnits` must be at least 1
+- Schema violations and malformed IDs return `400` with a clear message (not a 500)
+
+Example create:
+```json
+{
+  "locationName": "AutoSync Hub - Hitech City",
+  "address": "Plot 12, Madhapur, Hyderabad",
+  "latitude": 17.4483,
+  "longitude": 78.3915,
+  "chargerType": "AC/DC",
+  "numberOfUnits": 4
+}
+```
+
 To make a user an admin, manually update their `role` field to `"admin"` in MongoDB (e.g. using MongoDB Compass), since there's no public "make me admin" endpoint — that's intentional, for security.
 
 ## 5. Testing quickly with curl
