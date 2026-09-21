@@ -4,7 +4,7 @@ const { uploadToGCS, deleteFromGCS } = require("../config/gcs");
 // CREATE — POST /api/products
 const createProduct = async (req, res) => {
   try {
-    const { name, description, category, powerRating, basePrice, gst, finalPrice, guns } = req.body;
+    const { name, description, category, categoryId, powerRating, basePrice, gst, finalPrice, guns } = req.body;
 
     if (!name || !category || !powerRating || !basePrice || !gst || !finalPrice) {
       return res.status(400).json({ message: "Missing required product fields" });
@@ -17,13 +17,14 @@ const createProduct = async (req, res) => {
 
     const product = await Product.create({
       name,
-      description,
-      category,
-      powerRating,
-      basePrice,
-      gst,
-      finalPrice,
-      guns,
+      description: description || "",
+      category, // AC / DC
+      categoryId: categoryId || null, // links to a Category document
+      powerRating: Number(powerRating),
+      basePrice: Number(basePrice),
+      gst: Number(gst),
+      finalPrice: Number(finalPrice),
+      guns: guns ? Number(guns) : 1,
       imageUrl,
       createdBy: req.user.id,
     });
@@ -35,9 +36,16 @@ const createProduct = async (req, res) => {
 };
 
 // READ ALL — GET /api/products
+// Supports optional ?categoryId=... to filter by category
 const getProducts = async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: 1 });
+    const filter = {};
+    if (req.query.categoryId) filter.categoryId = req.query.categoryId;
+
+    const products = await Product.find(filter)
+      .populate("categoryId", "name description")
+      .sort({ createdAt: -1 });
+
     res.status(200).json({ count: products.length, products });
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch products", error: err.message });
@@ -47,7 +55,7 @@ const getProducts = async (req, res) => {
 // READ ONE — GET /api/products/:id
 const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).populate("categoryId", "name description");
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -65,12 +73,11 @@ const updateProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    const fields = ["name", "description", "category", "powerRating", "basePrice", "gst", "finalPrice", "guns", "inStock"];
+    const fields = ["name", "description", "category", "categoryId", "powerRating", "basePrice", "gst", "finalPrice", "guns", "inStock"];
     fields.forEach((field) => {
       if (req.body[field] !== undefined) product[field] = req.body[field];
     });
 
-    // If a new image was uploaded, replace the old one
     if (req.file) {
       if (product.imageUrl) await deleteFromGCS(product.imageUrl);
       product.imageUrl = await uploadToGCS(req.file.buffer, req.file.originalname, req.file.mimetype);

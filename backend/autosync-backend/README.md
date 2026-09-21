@@ -65,6 +65,21 @@ For every request below, add this header:
 
 Note: `POST` and `PUT` for products must be sent as **form-data** (not JSON) because of the image file. Use Postman or Thunder Client for testing — set the body type to `form-data`.
 
+### Categories
+| Method | Endpoint | Body | Who can use it |
+|---|---|---|---|
+| GET | `/api/categories` | — | Any logged-in user |
+| GET | `/api/categories/:id` | — | Any logged-in user |
+| POST | `/api/categories` | `{ name, description }` | Admin only |
+| PUT | `/api/categories/:id` | `{ name, description }` (both optional) | Admin only |
+| DELETE | `/api/categories/:id` | — | Admin only |
+
+Products link to a category through their `categoryId` field (optional — a product can exist without one). Extras:
+
+- `GET /api/products?categoryId=xxx` — list only the products in that category
+- Fetching a product automatically includes its category's name and description
+- `category` (AC/DC) and `categoryId` (the group it belongs to) are separate fields — a "Fast Charging" category can contain both AC and DC chargers
+
 To make a user an admin, manually update their `role` field to `"admin"` in MongoDB (e.g. using MongoDB Compass), since there's no public "make me admin" endpoint — that's intentional, for security.
 
 ## 5. Testing quickly with curl

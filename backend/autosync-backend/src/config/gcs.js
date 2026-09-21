@@ -3,6 +3,7 @@ const path = require("path");
 
 const storage = new Storage({
   projectId: process.env.GCS_PROJECT_ID,
+  keyFilename: process.env.GCS_KEYFILE, // path to your service account JSON key
 });
 
 const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
