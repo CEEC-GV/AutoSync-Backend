@@ -6,9 +6,9 @@ const productSchema = new mongoose.Schema(
     description: { type: String, default: "" },
     category: {
       type: String,
-      enum: ["AC", "DC"],
+      enum: ["AC", "DC", "Electronics"],
       required: true,
-    }, // kept as-is: AC/DC charger type
+    }, // AC/DC = charger type; Electronics = non-charger products (e.g. air purifiers)
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
