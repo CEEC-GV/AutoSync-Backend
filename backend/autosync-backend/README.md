@@ -113,6 +113,38 @@ Example create:
 
 To make a user an admin, manually update their `role` field to `"admin"` in MongoDB (e.g. using MongoDB Compass), since there's no public "make me admin" endpoint — that's intentional, for security.
 
+### Charging History
+
+Historical records of completed charging sessions, for user auditing and receipt viewing. Every record links to a real user and a real station from the Charging Stations module.
+
+| Method | Endpoint | Body | Who can use it |
+|---|---|---|---|
+| POST | `/api/history` | `{ station, startTime, endTime, energyKwh, price }` (+ optional `userId`) | Logged-in users (for themselves); `userId` param = admin only |
+| GET | `/api/history` | — | Logged-in users — but each user sees **only their own** logs; admins see **all** logs |
+| GET | `/api/history/:id` | — | The record's owner, or any admin |
+| DELETE | `/api/history/:id` | — | Admin only (remove erroneous records) |
+
+Notes:
+
+- `station` must be the ID of an existing charging station; `userId` (when an admin records on someone's behalf) must be an existing user
+- Dates are ISO 8601 strings, e.g. `2026-09-22T14:30:00Z`; `endTime` must be after `startTime`
+- `energyKwh` must be > 0, `price` ≥ 0
+- Responses include the station's name/address, the user's name/email, and a computed `durationMinutes` (derived from the timestamps, not stored)
+- There is intentionally **no PUT/UPDATE** — history records are immutable for audit integrity. Wrong record? Admin deletes it and records a fresh one.
+
+Example create:
+```json
+{
+  "station": "66f1a2b3c4d5e6f7a8b9c0d1",
+  "startTime": "2026-09-22T14:30:00Z",
+  "endTime": "2026-09-22T15:45:00Z",
+  "energyKwh": 18.6,
+  "price": 242.50
+}
+```
+
+To make a user an admin, manually update their `role` field to `"admin"` in MongoDB (e.g. using MongoDB Compass), since there's no public "make me admin" endpoint — that's intentional, for security.
+
 ## 5. Testing quickly with curl
 
 Signup:
