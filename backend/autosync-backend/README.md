@@ -143,6 +143,50 @@ Example create:
 }
 ```
 
+### Shopping Cart
+
+One active cart per user, created automatically on first use. Every route works on the logged-in user's own cart — no admin concept here. Cart responses also include `itemCount` and `cartTotal` (sum of `finalPrice × quantity`).
+
+| Method | Endpoint | Body | What it does |
+|---|---|---|---|
+| GET | `/api/cart` | — | Current user's cart with populated product details |
+| POST | `/api/cart/add` | `{ productId, quantity? }` | Adds a product. If it's already in the cart, increments quantity and refreshes its `addedAt` |
+| DELETE | `/api/cart/remove/:productId` | — | Removes that product from the cart completely |
+| DELETE | `/api/cart/clear` | — | Empties the cart entirely |
+
+Notes: `quantity` defaults to 1 and must be ≥ 1; out-of-stock products are rejected; adding a product that doesn't exist returns 404.
+
+### Orders (Checkout)
+
+| Method | Endpoint | Body | Who can use it |
+|---|---|---|---|
+| POST | `/api/orders` | `{ shippingAddress: { street, city, state, postalCode, country } }` | Any logged-in user |
+| GET | `/api/orders/my-orders` | — | Any logged-in user — own orders, newest first |
+| GET | `/api/orders` | — | Admin only — system-wide order list |
+| GET | `/api/orders/:id` | — | The order's owner, or any admin |
+| PUT | `/api/orders/:id/status` | `{ status }` — one of `Pending`, `Processing`, `Shipped`, `Delivered` | Admin only |
+
+Checkout behavior (`POST /api/orders`):
+
+- Reads the user's current cart — an empty cart returns 400
+- Snapshots each item's **price at purchase time** (`finalPrice` per unit) and the product name, so later price changes or product deletions never rewrite order history
+- Calculates and stores `totalPrice` for the whole order
+- Order status starts at `Pending`
+- **Automatically clears the cart** after the order is saved
+
+Example checkout body:
+```json
+{
+  "shippingAddress": {
+    "street": "Flat 302, Green Meadows",
+    "city": "Hyderabad",
+    "state": "Telangana",
+    "postalCode": "500081",
+    "country": "India"
+  }
+}
+```
+
 To make a user an admin, manually update their `role` field to `"admin"` in MongoDB (e.g. using MongoDB Compass), since there's no public "make me admin" endpoint — that's intentional, for security.
 
 ## 5. Testing quickly with curl
