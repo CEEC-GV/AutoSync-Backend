@@ -54,22 +54,46 @@ This starts the app AND a MongoDB container together. No need to install MongoDB
 For every request below, add this header:
 `Authorization: Bearer <token from signup/login>`
 
-### Products (chargers)
+### Products (catalog)
+
+The catalog is organized into **6 fixed categories**: **Fastag, Air purifier, GPS, EV charger, Auto IOT devices, Number plate frame**. Every product MUST belong to one of them via `categoryId`. Product reads are public (no login needed).
+
 | Method | Endpoint | Body | Who can use it |
 |---|---|---|---|
-| GET | `/api/products` | — | Any logged-in user |
-| GET | `/api/products/:id` | — | Any logged-in user |
-| POST | `/api/products` | form-data: name, category, powerRating, basePrice, gst, finalPrice, guns, image (file) | Admin only |
-| PUT | `/api/products/:id` | form-data, same fields (all optional) | Admin only |
+| GET | `/api/products` | — (optional `?categoryId=xxx`) | Public |
+| GET | `/api/products/:id` | — | Public |
+| POST | `/api/products` | form-data (see below) | Admin only |
+| PUT | `/api/products/:id` | form-data (all fields optional) | Admin only |
 | DELETE | `/api/products/:id` | — | Admin only |
+
+**Required form-data fields:** `name`, `description`, `categoryId`, `basePrice`, `gst`, `finalPrice`
+**Optional fields:** `powerRating` (kW — chargers/powered devices only), `guns` (default 1), `stock` (inventory count, default 0), `category` (legacy AC/DC tag), `details` (JSON string of category-specific attributes), `image` (file)
+
+**Category-specific `details` attributes** (sent as a JSON string in form-data):
+
+| Category | details keys |
+|---|---|
+| Fastag | `vehicleClass`, `issuerName` |
+| Air purifier | `cadr`, `filterType`, `powerSource` |
+| GPS | `screenSize`, `connectivity` |
+| EV charger | `powerOutputKw`, `connectorType`, `mountingType` |
+| Auto IOT devices | `sensorType`, `appCompatible` |
+| Number plate frame | `material`, `dimensions` |
+
+The `details` object is flexible — the keys above are the convention, not enforced. The billed price everywhere (cart totals, order price snapshots) is `finalPrice`.
 
 Note: `POST` and `PUT` for products must be sent as **form-data** (not JSON) because of the image file. Use Postman or Thunder Client for testing — set the body type to `form-data`.
 
+**Legacy products:** items created before the 6-category system have no `categoryId`. They still show in listings, but the first time you edit one you must send a `categoryId` (the API will remind you).
+
 ### Categories
+
+Categories organize the catalog (the 6 fixed ones: Fastag, Air purifier, GPS, EV charger, Auto IOT devices, Number plate frame). Viewing them is **public** — no login needed.
+
 | Method | Endpoint | Body | Who can use it |
 |---|---|---|---|
-| GET | `/api/categories` | — | Any logged-in user |
-| GET | `/api/categories/:id` | — | Any logged-in user |
+| GET | `/api/categories` | — | Public |
+| GET | `/api/categories/:id` | — | Public |
 | POST | `/api/categories` | `{ name, description }` | Admin only |
 | PUT | `/api/categories/:id` | `{ name, description }` (both optional) | Admin only |
 | DELETE | `/api/categories/:id` | — | Admin only |
@@ -78,7 +102,9 @@ Products link to a category through their `categoryId` field (optional — a pro
 
 - `GET /api/products?categoryId=xxx` — list only the products in that category
 - Fetching a product automatically includes its category's name and description
-- `category` (AC/DC) and `categoryId` (the group it belongs to) are separate fields — a "Fast Charging" category can contain both AC and DC chargers
+- Every product links to exactly one category via its required `categoryId`; fetching a product automatically includes the category's name and description
+- `GET /api/products?categoryId=xxx` lists only that category's products
+- The old string `category` field (AC/DC/Electronics) is optional legacy, kept so older records still validate
 
 ### Charging Stations
 

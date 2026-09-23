@@ -9,9 +9,9 @@ const {
 } = require("../controllers/categoryController");
 const { protect, adminOnly } = require("../middleware/auth");
 
-// Anyone logged in can view categories
-router.get("/", protect, getCategories);
-router.get("/:id", protect, getCategoryById);
+// Categories are public — anyone can view them (catalog browsing needs no login)
+router.get("/", getCategories);
+router.get("/:id", getCategoryById);
 
 // Only admins can create/edit/delete categories
 router.post("/", protect, adminOnly, createCategory);
